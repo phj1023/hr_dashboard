@@ -1,0 +1,683 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용 성과 지표 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0F172A; --card:#1E293B; --border:#334155;
+    --text:#E2E8F0; --sub:#94A3B8;
+    --m1:#6366F1; --m2:#10B981; --up:#10B981; --down:#EF4444; --new:#F59E0B; --accent:#6366F1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
+
+  /* HEADER */
+  .header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  .header-title{font-size:20px;font-weight:700;color:#F1F5F9}
+  .header-sub{font-size:12px;color:var(--sub);margin-top:2px}
+  .legend{display:flex;gap:16px;align-items:center;font-size:12px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+
+  /* SITE TABS */
+  .tabs-wrap{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+  .tab-btn{padding:12px 20px;cursor:pointer;border:none;background:none;color:var(--sub);font-size:13px;font-weight:500;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+  .tab-btn:hover{color:var(--text)}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+  .tab-panel{display:none;padding:24px}
+  .tab-panel.active{display:block}
+
+  /* PERIOD FILTER BAR */
+  .filter-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .filter-group{display:flex;align-items:center;gap:8px}
+  .filter-label{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+  .filter-divider{width:1px;height:24px;background:var(--border)}
+  .period-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sub);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .period-btn:hover{color:var(--text);border-color:var(--accent)}
+  .period-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .period-btn.q-btn.active{background:#8B5CF6;border-color:#8B5CF6;color:#fff}
+  .period-indicator{margin-left:auto;font-size:12px;color:var(--sub);background:rgba(99,102,241,.12);padding:4px 12px;border-radius:6px;font-weight:500}
+
+  /* DROPDOWN FILTER */
+  .filter-select{background:#263548;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-weight:500;padding:6px 28px 6px 10px;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;min-width:110px;transition:border-color .15s}
+  .filter-select:hover{border-color:var(--accent)}
+  .filter-select:focus{border-color:var(--accent)}
+  .filter-select option{background:#1E293B;color:var(--text)}
+
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .kpi-label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .kpi-value{font-size:28px;font-weight:700;color:#F1F5F9}
+  .kpi-sub{font-size:11px;color:var(--sub);margin-top:4px}
+  .kpi-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;margin-top:6px}
+  .badge-up{background:rgba(16,185,129,.15);color:var(--up)}
+  .badge-down{background:rgba(239,68,68,.15);color:var(--down)}
+
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+  .charts-row-3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .chart-title{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+  .chart-badge{font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(99,102,241,.15);color:#A5B4FC;font-weight:600;text-transform:none;letter-spacing:0}
+  .chart-wrap{position:relative;height:240px}
+  .chart-wrap-tall{position:relative;height:300px}
+
+  /* FUNNEL */
+  .funnel-wrap{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+  .funnel-row{display:flex;align-items:center;gap:10px}
+  .funnel-label{width:56px;font-size:11px;color:var(--sub);text-align:right;flex-shrink:0}
+  .funnel-bar-wrap{flex:1;background:rgba(51,65,85,.4);border-radius:4px;height:30px}
+  .funnel-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#fff;min-width:36px}
+  .funnel-pct{font-size:11px;color:var(--sub);width:48px;text-align:right;flex-shrink:0}
+
+  /* TABLE */
+  .table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px}
+  .table-title{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  .table-desc{font-size:11px;color:var(--sub);margin-bottom:16px;line-height:1.8}
+  table{width:100%;border-collapse:collapse}
+  thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:10px 12px;border-bottom:1px solid rgba(51,65,85,.5);font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:rgba(99,102,241,.05)}
+  .job-name{font-weight:600;color:#F1F5F9}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .diff-up{color:var(--up);font-weight:700}
+  .diff-down{color:var(--down);font-weight:700}
+  .diff-new{color:var(--new);font-weight:700}
+  .row-up td{background:rgba(16,185,129,.07)!important}
+  .row-down td{background:rgba(239,68,68,.07)!important}
+  .row-new td{background:rgba(245,158,11,.07)!important}
+  .row-up td.job-name{border-left:3px solid var(--up);padding-left:9px}
+  .row-down td.job-name{border-left:3px solid var(--down);padding-left:9px}
+  .row-new td.job-name{border-left:3px solid var(--new);padding-left:9px}
+
+  /* SITE BADGE (전체 탭 직무 옆 사업부 표시) */
+  .site-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;vertical-align:middle;white-space:nowrap}
+  .site-tag-mm{background:rgba(239,68,68,.2);color:#fca5a5}
+  .site-tag-gjb{background:rgba(99,102,241,.2);color:#a5b4fc}
+  .site-tag-scm{background:rgba(16,185,129,.2);color:#6ee7b7}
+  .site-tag-cpf{background:rgba(236,72,153,.2);color:#f9a8d4}
+
+  /* SINGLE MODE (단일 월/분기 선택 시 비교 숨김) */
+  .hide-compare{display:none!important}
+
+  @media(max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .charts-row,.charts-row-3{grid-template-columns:1fr}
+    .filter-bar{gap:12px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">★ 채용 성과 지표 대시보드</div>
+    <div class="header-sub">2026년 Q1 (M1 + M2 + M3) - 마스터시트 2026.04.06</div>
+  </div>
+  <div class="legend">
+    <span><span class="legend-dot" style="background:var(--m1)"></span>M1 (1월)</span>
+    <span><span class="legend-dot" style="background:var(--m2)"></span>M2 (2월)</span>
+    <span><span class="legend-dot" style="background:var(--up)"></span>증가</span>
+    <span><span class="legend-dot" style="background:var(--down)"></span>감소</span>
+    <span><span class="legend-dot" style="background:var(--new)"></span>신규</span>
+  </div>
+</div>
+
+<div class="tabs-wrap" id="tabBar"></div>
+<div id="tabContent"></div>
+
+<script>
+Chart.defaults.color='#94A3B8';
+Chart.defaults.borderColor='#334155';
+Chart.defaults.font.family='Segoe UI,sans-serif';
+
+// ── 원본 데이터 ───────────────────────────────────────────────────
+const RAW = {
+  마케팅모먼트: {
+    M1: {
+      PD: {지원자:95,면접:2,합격:0,오퍼:0,IG:0},
+      퍼포먼스마케터: {지원자:3,면접:0,합격:0,오퍼:0,IG:0},
+      검색광고마케터: {지원자:39,면접:2,합격:2,오퍼:2,IG:0},
+      콘텐츠디자이너: {지원자:96,면접:4,합격:2,오퍼:2,IG:0}
+    },
+    M2: {
+      퍼포먼스마케터: {지원자:24,면접:4,합격:3,오퍼:0,IG:0},
+      PD: {지원자:17,면접:6,합격:0,오퍼:0,IG:0},
+      콘텐츠디자이너: {지원자:17,면접:0,합격:2,오퍼:1,IG:0},
+      BM: {지원자:5,면접:0,합격:0,오퍼:0,IG:1}
+    },
+    M3: {
+      퍼포먼스마케터: {지원자:18,면접:11,합격:4,오퍼:4,IG:2},
+      BM: {지원자:8,면접:2,합격:1,오퍼:0,IG:10},
+      영상디자이너: {지원자:3,면접:0,합격:0,오퍼:0,IG:0},
+      PD: {지원자:28,면접:6,합격:4,오퍼:3,IG:0},
+      콘텐츠디자이너: {지원자:15,면접:3,합격:2,오퍼:3,IG:0}
+    }
+  },
+  고지식바이오: {
+    M1: {
+      브랜드디자이너: {지원자:92,면접:3,합격:2,오퍼:1,IG:0},
+      콘텐츠디자이너: {지원자:99,면접:0,합격:0,오퍼:0,IG:0},
+      인플루언서마케터: {지원자:47,면접:2,합격:0,오퍼:0,IG:0},
+      MD: {지원자:30,면접:0,합격:0,오퍼:0,IG:0},
+      BM: {지원자:5,면접:0,합격:0,오퍼:0,IG:0}
+    },
+    M2: {
+      CS: {지원자:7,면접:8,합격:1,오퍼:0,IG:0},
+      브랜드디자이너: {지원자:11,면접:1,합격:1,오퍼:1,IG:1},
+      인플루언서마케터: {지원자:11,면접:1,합격:1,오퍼:0,IG:0},
+      콘텐츠디자이너: {지원자:6,면접:0,합격:1,오퍼:1,IG:0},
+      퍼포먼스마케터: {지원자:1,면접:0,합격:1,오퍼:0,IG:0},
+      BM: {지원자:3,면접:1,합격:0,오퍼:0,IG:0}
+    },
+    M3: {
+      콘텐츠디자이너: {지원자:7,면접:3,합격:2,오퍼:1,IG:0},
+      MD: {지원자:19,면접:2,합격:1,오퍼:1,IG:9},
+      CS: {지원자:2,면접:0,합격:0,오퍼:0,IG:0},
+      퍼포먼스마케터: {지원자:3,면접:2,합격:0,오퍼:0,IG:0},
+      편집자: {지원자:5,면접:3,합격:1,오퍼:0,IG:0},
+      BM: {지원자:1,면접:1,합격:0,오퍼:0,IG:0},
+      브랜드디자이너: {지원자:1,면접:0,합격:0,오퍼:0,IG:0}
+    }
+  },
+  삼초마을: {
+    M1: {
+      CS: {지원자:26,면접:0,합격:0,오퍼:0,IG:0},
+      MD: {지원자:49,면접:2,합격:1,오퍼:0,IG:0}
+    },
+    M2: {
+      MD: {지원자:24,면접:8,합격:0,오퍼:0,IG:16},
+      운영지원: {지원자:8,면접:1,합격:1,오퍼:0,IG:0}
+    },
+    M3: {
+      운영지원: {지원자:9,면접:1,합격:0,오퍼:0,IG:1},
+      MD: {지원자:33,면접:7,합격:2,오퍼:1,IG:17}
+    }
+  },
+  콘크리트파머스: {
+    M1: {
+      마케터: {지원자:73,면접:4,합격:2,오퍼:1,IG:0},
+      AX기획: {지원자:0,면접:3,합격:1,오퍼:1,IG:0}
+    },
+    M2: {
+      재무회계: {지원자:6,면접:1,합격:0,오퍼:0,IG:0},
+      AI교육콘텐츠: {지원자:4,면접:1,합격:0,오퍼:0,IG:0},
+      마케터: {지원자:7,면접:1,합격:2,오퍼:4,IG:0},
+      TM: {지원자:1,면접:1,합격:1,오퍼:1,IG:0},
+      AX기획: {지원자:4,면접:3,합격:1,오퍼:0,IG:0}
+    },
+    M3: {
+      재무회계: {지원자:14,면접:5,합격:0,오퍼:0,IG:0},
+      AX기획: {지원자:9,면접:2,합격:1,오퍼:1,IG:0},
+      AI교육콘텐츠: {지원자:1,면접:0,합격:0,오퍼:0,IG:0}
+    }
+  }
+};
+
+// 분기 구성
+const QUARTER_MAP = { Q1: ["M1","M2","M3"] };
+const SITES = ["전체","마케팅모먼트","고지식바이오","삼초마을","콘크리트파머스"];
+const MONTHS = ["M1","M2","M3"];
+const QUARTERS = ["Q1"];
+const MONTH_LABELS = {M1:'1월',M2:'2월',M3:'3월',M4:'4월',M5:'5월',M6:'6월',M7:'7월',M8:'8월',M9:'9월',M10:'10월',M11:'11월',M12:'12월'};
+const MONTH_COLORS = ['rgba(99,102,241,.8)','rgba(16,185,129,.8)','rgba(245,158,11,.8)','rgba(239,68,68,.8)','rgba(168,85,247,.8)','rgba(20,184,166,.8)','rgba(249,115,22,.8)','rgba(236,72,153,.8)'];
+
+// 현재 선택 상태 (site → period)
+const STATE = {};
+SITES.forEach(s => { STATE[s] = 'ALL'; });   // ALL | M1 | M2 | Q1 ...
+
+// ── 유틸 ──────────────────────────────────────────────────────────
+const fmt  = v => (v==null)?'-':Number(v).toLocaleString();
+const rate = (a,b) => b>0?(a/b*100).toFixed(1)+'%':'-';
+const pct  = (a,b) => b>0?Math.round(a/b*100):0;
+
+// period → 포함 월 목록
+function periodMonths(period) {
+  if (period==='ALL') return MONTHS;
+  if (MONTHS.includes(period)) return [period];
+  if (QUARTER_MAP[period]) return QUARTER_MAP[period];
+  return MONTHS;
+}
+
+function sumSite(site, period) {
+  const months = periodMonths(period);
+  const srcs = site==='전체' ? Object.values(RAW) : [RAW[site]];
+  const out = {};
+  months.forEach(m => {
+    out[m] = {지원자:0,면접:0,합격:0,오퍼:0,IG:0};
+    srcs.forEach(sd => {
+      if (!sd[m]) return;
+      Object.values(sd[m]).forEach(j => {
+        out[m].지원자+=j.지원자; out[m].면접+=j.면접;
+        out[m].합격+=j.합격; out[m].오퍼+=j.오퍼; out[m].IG+=j.IG;
+      });
+    });
+  });
+  // total across selected months
+  out._total = {지원자:0,면접:0,합격:0,오퍼:0,IG:0};
+  months.forEach(m => {
+    Object.keys(out._total).forEach(k => { out._total[k] += (out[m]||{})[k]||0; });
+  });
+  return out;
+}
+
+function getJobs(site, period) {
+  const months = periodMonths(period);
+  const srcs = site==='전체' ? Object.entries(RAW) : [[site, RAW[site]]];
+  const s = new Set();
+  srcs.forEach(([,sd]) => months.forEach(m => { if(sd[m]) Object.keys(sd[m]).forEach(j=>s.add(j)); }));
+  return [...s];
+}
+
+function getJobData(site, job, month) {
+  const srcs = site==='전체' ? Object.values(RAW) : [RAW[site]];
+  const out  = {지원자:0,면접:0,합격:0,오퍼:0,IG:0};
+  srcs.forEach(sd => {
+    if (sd[month]?.[job]) {
+      const j = sd[month][job];
+      out.지원자+=j.지원자; out.면접+=j.면접; out.합격+=j.합격; out.오퍼+=j.오퍼; out.IG+=j.IG;
+    }
+  });
+  return out;
+}
+
+function hasJob(site, job, month) {
+  const srcs = site==='전체' ? Object.values(RAW) : [RAW[site]];
+  return srcs.some(sd => sd[month]?.[job] !== undefined);
+}
+
+function diffClass(site, job, pM, lM) {
+  if (!pM || !lM) return 'same';
+  const h1=hasJob(site,job,pM), h2=hasJob(site,job,lM);
+  if (!h1&&h2) return 'new';
+  if (h1&&!h2) return 'end';
+  const d1=getJobData(site,job,pM), d2=getJobData(site,job,lM);
+  if (d2.지원자>d1.지원자) return 'up';
+  if (d2.지원자<d1.지원자) return 'down';
+  return 'same';
+}
+
+// ── 차트 관리 ─────────────────────────────────────────────────────
+const CI={};
+function chart(id, type, data, opts) {
+  if (CI[id]) CI[id].destroy();
+  CI[id] = new Chart(document.getElementById(id).getContext('2d'), {
+    type, data,
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}} },
+      ...opts }
+  });
+}
+
+// ── 패널 HTML 골격 ────────────────────────────────────────────────
+function buildPanel(site) {
+  const sid = site==='전체'?'all':site;
+  return `
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">전체 기간</span>
+      <button class="period-btn active" data-site="${site}" data-period="ALL">전체</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">월별</span>
+      <select class="filter-select" id="sel_month_${sid}" data-site="${site}" data-type="month">
+        <option value="">월 선택</option>
+        ${MONTHS.map(m=>`<option value="${m}">${m} · ${MONTH_LABELS[m]||m}</option>`).join('')}
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">분기별</span>
+      <select class="filter-select" id="sel_quarter_${sid}" data-site="${site}" data-type="quarter">
+        <option value="">분기 선택</option>
+        ${QUARTERS.map(q=>`<option value="${q}">${q}</option>`).join('')}
+      </select>
+    </div>
+    <div class="period-indicator" id="ind_${sid}">전체 기간 (M1 + M2)</div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row" id="kpi_${sid}"></div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-row-3">
+    <div class="chart-card">
+      <div class="chart-title">
+        <span>직무별 지원자 수</span>
+        <span class="chart-badge" id="badge_bar_${sid}">M1 vs M2 비교</span>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="bar_${sid}"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">
+        <span>채용 퍼널</span>
+        <span class="chart-badge" id="badge_fn_${sid}">M2 기준</span>
+      </div>
+      <div class="funnel-wrap" id="fn_${sid}"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title"><span>월별 지원자 추이</span></div>
+      <div class="chart-wrap"><canvas id="line_${sid}"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>IG vs 일반 채널</span></div>
+      <div class="chart-wrap"><canvas id="ig_${sid}"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-title">직무별 데이터</div>
+    <div class="table-desc" id="desc_${sid}"></div>
+    <table>
+      <thead id="thead_${sid}"></thead>
+      <tbody id="tb_${sid}"></tbody>
+    </table>
+  </div>`;
+}
+
+// ── 렌더 메인 ─────────────────────────────────────────────────────
+function renderData(site, period) {
+  const sid    = site==='전체'?'all':site;
+  const months = periodMonths(period);
+  const isAll  = period==='ALL' || months.length>1;
+  const isSingle = months.length===1;
+  const mo     = sumSite(site, period);
+  const jobs   = getJobs(site, period);
+
+  // 표시 텍스트
+  const periodLabel = period==='ALL'?`전체 기간 (${MONTHS.join(' + ')})`:
+                      MONTHS.includes(period)?`${period} (${MONTH_LABELS[period]||period})`:
+                      `${period} (${QUARTER_MAP[period].join(', ')})`;
+  document.getElementById(`ind_${sid}`).textContent = periodLabel;
+
+  // ── KPI ────────────────────────────────────────────────────────
+  const tot = mo._total;
+  // 마지막 두 월로 동적 비교 (M2→M3, M1→M2 등)
+  const availMs = months.filter(m => mo[m]);
+  const prevMLabel = availMs.length>=2 ? availMs[availMs.length-2] : null;
+  const lastMLabel = availMs.length>=1 ? availMs[availMs.length-1] : null;
+  let prevM = null;
+  if (isAll && prevMLabel && lastMLabel) {
+    prevM = { prev: mo[prevMLabel], cur: mo[lastMLabel] };
+  }
+  function badge(cur, prev, k) {
+    if (!prev) return '';
+    const d = cur[k]-prev[k];
+    if (d===0) return '';
+    const c = d>0?'badge-up':'badge-down';
+    return `<span class="kpi-badge ${c}">${d>0?'+':''}${d} vs ${prevMLabel}</span>`;
+  }
+  const kpiCur  = prevM ? prevM.cur : tot;
+  const kpiPrev = prevM ? prevM.prev : null;
+  const igPct   = tot.지원자>0?(tot.IG/tot.지원자*100).toFixed(1)+'%':'-';
+
+  document.getElementById(`kpi_${sid}`).innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">총 지원자</div>
+      <div class="kpi-value">${fmt(tot.지원자)}</div>
+      <div class="kpi-sub">${isAll ? months.map(m=>`${m}: ${fmt(mo[m]?.지원자||0)}`).join(' · ') : periodLabel}</div>
+      ${badge(kpiCur,kpiPrev,'지원자')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">면접 합격률</div>
+      <div class="kpi-value">${rate(kpiCur.합격,kpiCur.면접)}</div>
+      <div class="kpi-sub">면접 ${fmt(kpiCur.면접)}명 → 합격 ${fmt(kpiCur.합격)}명</div>
+      ${badge(kpiCur,kpiPrev,'합격')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">오퍼 수락률</div>
+      <div class="kpi-value">${rate(kpiCur.오퍼,kpiCur.합격)}</div>
+      <div class="kpi-sub">합격 ${fmt(kpiCur.합격)}명 → 오퍼 ${fmt(kpiCur.오퍼)}명</div>
+      ${badge(kpiCur,kpiPrev,'오퍼')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">IG 지원 비율</div>
+      <div class="kpi-value">${igPct}</div>
+      <div class="kpi-sub">IG ${fmt(tot.IG)}명 / 전체 ${fmt(tot.지원자)}명</div>
+    </div>`;
+
+  // ── 바 차트 ────────────────────────────────────────────────────
+  document.getElementById(`badge_bar_${sid}`).textContent =
+    isSingle ? `${months[0]} 단독` : `월별 비교 (${months.join(' · ')})`;
+
+  if (isSingle) {
+    const m = months[0];
+    const colors = jobs.map(j => getJobData(site,j,m).지원자>0?'rgba(99,102,241,.8)':'rgba(99,102,241,.3)');
+    chart(`bar_${sid}`,'bar',{
+      labels: jobs,
+      datasets:[{ label:`${m} 지원자`, data:jobs.map(j=>getJobData(site,j,m).지원자), backgroundColor:colors, borderRadius:4 }]
+    },{ scales:{ x:{ticks:{font:{size:10}}}, y:{beginAtZero:true} } });
+  } else {
+    // 동적 월별 비교
+    chart(`bar_${sid}`,'bar',{
+      labels: jobs,
+      datasets: months.map((m,i) => ({
+        label: `${m} (${MONTH_LABELS[m]||m})`,
+        data: jobs.map(j=>getJobData(site,j,m).지원자),
+        backgroundColor: MONTH_COLORS[i % MONTH_COLORS.length],
+        borderRadius: 4
+      }))
+    },{ scales:{ x:{ticks:{font:{size:10}}}, y:{beginAtZero:true} } });
+  }
+
+  // ── 라인 차트 ──────────────────────────────────────────────────
+  if (isSingle) {
+    // 단일 월: 직무별 지원자 수를 horizontal bar로 보여줌
+    chart(`line_${sid}`,'bar',{
+      labels: jobs,
+      datasets:[{
+        label:`${months[0]} 지원자`,
+        data: jobs.map(j=>getJobData(site,j,months[0]).지원자),
+        backgroundColor:'rgba(99,102,241,.6)', borderRadius:4,
+        indexAxis:'y'
+      }]
+    },{ indexAxis:'y', scales:{ x:{beginAtZero:true}, y:{ticks:{font:{size:10}}} },
+       plugins:{ legend:{display:false} } });
+  } else {
+    chart(`line_${sid}`,'line',{
+      labels: months.map(m=>`${m} (${MONTH_LABELS[m]||m})`),
+      datasets:[
+        { label:'지원자',  data:months.map(m=>mo[m]?.지원자||0), borderColor:'#6366F1', backgroundColor:'rgba(99,102,241,.1)', tension:.4, fill:true,  pointRadius:5 },
+        { label:'면접합격',data:months.map(m=>mo[m]?.합격||0),   borderColor:'#10B981', backgroundColor:'rgba(16,185,129,.1)', tension:.4, fill:true,  pointRadius:5 },
+        { label:'오퍼수락',data:months.map(m=>mo[m]?.오퍼||0),   borderColor:'#F59E0B', backgroundColor:'rgba(245,158,11,.08)',tension:.4, fill:false, pointRadius:5 }
+      ]
+    },{ scales:{ y:{beginAtZero:true} } });
+  }
+
+  // ── 퍼널 ───────────────────────────────────────────────────────
+  const fnLastM = months[months.length-1];
+  const fnBase = isSingle ? mo[months[0]] : mo[fnLastM] || mo[months[0]];
+  document.getElementById(`badge_fn_${sid}`).textContent =
+    isSingle ? `${months[0]} 기준` : `${fnLastM} 기준`;
+  const stages = [
+    {label:'지원',v:fnBase?.지원자||0,color:'#6366F1'},
+    {label:'면접',v:fnBase?.면접||0,  color:'#8B5CF6'},
+    {label:'합격',v:fnBase?.합격||0,  color:'#10B981'},
+    {label:'오퍼',v:fnBase?.오퍼||0,  color:'#F59E0B'}
+  ];
+  const mx = stages[0].v||1;
+  document.getElementById(`fn_${sid}`).innerHTML = stages.map((s,i)=>{
+    const w = Math.max(Math.round(s.v/mx*100), s.v>0?8:0);
+    return `<div class="funnel-row">
+      <div class="funnel-label">${s.label}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${w}%;background:${s.color}">${s.v}명</div>
+      </div>
+      <div class="funnel-pct">${i>0?pct(s.v,stages[i-1].v)+'%':'기준'}</div>
+    </div>`;
+  }).join('');
+
+  // ── IG 도넛 ────────────────────────────────────────────────────
+  const normal = tot.지원자 - tot.IG;
+  chart(`ig_${sid}`,'doughnut',{
+    labels:['IG 지원','일반 지원'],
+    datasets:[{ data:[tot.IG,normal], backgroundColor:['#EC4899','#6366F1'], borderWidth:0, hoverOffset:6 }]
+  },{ cutout:'65%' });
+
+  // ── 테이블 ────────────────────────────────────────────────────
+  const desc = document.getElementById(`desc_${sid}`);
+  const thead = document.getElementById(`thead_${sid}`);
+  const tbody = document.getElementById(`tb_${sid}`);
+
+  if (isSingle) {
+    const m = months[0];
+    desc.innerHTML = `<span style="color:var(--accent)">■ ${m} 단독 데이터</span> — 지원자·면접·합격·오퍼·IG 현황`;
+    thead.innerHTML = `<tr>
+      <th style="min-width:100px">직무</th>
+      <th class="num">지원자</th><th class="num">면접 진행</th><th class="num">면접 합격</th>
+      <th class="num">면접 합격률</th><th class="num">오퍼 수락</th><th class="num">오퍼 수락률</th><th class="num">IG</th>
+    </tr>`;
+    tbody.innerHTML = jobs.map(job=>{
+      const d = getJobData(site,job,m);
+      if (!hasJob(site,job,m)) return `<tr><td class="job-name">${job}</td><td colspan="7" class="num" style="color:var(--sub)">해당 월 공고 없음</td></tr>`;
+      return `<tr>
+        <td class="job-name">${job}</td>
+        <td class="num">${fmt(d.지원자)}</td>
+        <td class="num">${fmt(d.면접)}</td>
+        <td class="num">${fmt(d.합격)}</td>
+        <td class="num">${rate(d.합격,d.면접)}</td>
+        <td class="num">${fmt(d.오퍼)}</td>
+        <td class="num">${rate(d.오퍼,d.합격)}</td>
+        <td class="num">${d.IG>0?fmt(d.IG):'-'}</td>
+      </tr>`;
+    }).join('');
+
+  } else {
+    // ALL / 분기 — 비교 테이블 (동적: 마지막 두 월 비교)
+    const tPrev = prevMLabel;   // e.g. "M2"
+    const tLast = lastMLabel;   // e.g. "M3"
+    const SITE_TAG_CLS = {'마케팅모먼트':'site-tag-mm','고지식바이오':'site-tag-gjb','삼초마을':'site-tag-scm','콘크리트파머스':'site-tag-cpf'};
+    // 전체 뷰: 사업부별로 (사업부, 직무) 쌍 확장 / 개별 사업부: 직무만
+    const rowItems = site==='전체'
+      ? SITES.slice(1).flatMap(s => getJobs(s,'ALL').map(j=>({s,j})))
+      : getJobs(site,'ALL').map(j=>({s:site,j}));
+    desc.innerHTML = tPrev ? `
+      <span style="color:var(--up)">■ 증가</span>: ${tLast} 지원자 ≥ ${tPrev}+1 &nbsp;|&nbsp;
+      <span style="color:var(--down)">■ 감소</span>: ${tLast} 지원자 ≤ ${tPrev}−1 &nbsp;|&nbsp;
+      <span style="color:var(--new)">■ 신규</span>: ${tPrev} 없이 ${tLast} 첫 등장 &nbsp;|&nbsp;
+      <span style="color:var(--sub)">■ 종료</span>: ${tPrev} 있었지만 ${tLast} 공고 없음` :
+      `<span style="color:var(--sub)">${tLast} 단일 월 데이터</span>`;
+    thead.innerHTML = `<tr>
+      <th style="min-width:140px">직무</th>
+      ${tPrev?`<th class="num">${tPrev} 지원자</th>`:''}
+      <th class="num">${tLast} 지원자</th><th class="num">전월 대비</th>
+      ${tPrev?`<th class="num">${tPrev} 합격률</th>`:''}
+      <th class="num">${tLast} 합격률</th>
+      ${tPrev?`<th class="num">${tPrev} 오퍼</th>`:''}
+      <th class="num">${tLast} 오퍼</th><th class="num">${tLast} IG</th>
+    </tr>`;
+    tbody.innerHTML = rowItems.map(({s:rowSite, j:job})=>{
+      const hp=tPrev?hasJob(rowSite,job,tPrev):false, hl=tLast?hasJob(rowSite,job,tLast):false;
+      const dp=tPrev?getJobData(rowSite,job,tPrev):{지원자:0,면접:0,합격:0,오퍼:0,IG:0};
+      const dl=tLast?getJobData(rowSite,job,tLast):{지원자:0,면접:0,합격:0,오퍼:0,IG:0};
+      const dc=diffClass(rowSite,job,tPrev,tLast);
+      const diff=(hp&&hl)?dl.지원자-dp.지원자:null;
+      let rowCls='', diffTxt='-';
+      if(dc==='up')   {rowCls='row-up';   diffTxt=`<span class="diff-up">▲ +${diff}</span>`;}
+      if(dc==='down') {rowCls='row-down'; diffTxt=`<span class="diff-down">▼ ${diff}</span>`;}
+      if(dc==='new')  {rowCls='row-new';  diffTxt=`<span class="diff-new">★ 신규</span>`;}
+      if(dc==='same'&&diff!==null) diffTxt='─ 0';
+      if(dc==='end')  diffTxt=`<span style="color:var(--sub)">─ 종료</span>`;
+      const siteTag = site==='전체' ? `<span class="site-tag ${SITE_TAG_CLS[rowSite]||''}">${rowSite}</span>` : '';
+      return `<tr class="${rowCls}">
+        <td class="job-name">${job}${siteTag}</td>
+        ${tPrev?`<td class="num">${hp?fmt(dp.지원자):'-'}</td>`:''}
+        <td class="num">${hl?fmt(dl.지원자):'-'}</td>
+        <td class="num">${diffTxt}</td>
+        ${tPrev?`<td class="num">${hp&&dp.면접>0?rate(dp.합격,dp.면접):'-'}</td>`:''}
+        <td class="num">${hl&&dl.면접>0?rate(dl.합격,dl.면접):'-'}</td>
+        ${tPrev?`<td class="num">${hp?fmt(dp.오퍼):'-'}</td>`:''}
+        <td class="num">${hl?fmt(dl.오퍼):'-'}</td>
+        <td class="num">${hl&&dl.IG>0?fmt(dl.IG):'-'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── 탭 + 필터 초기화 ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const bar     = document.getElementById('tabBar');
+  const content = document.getElementById('tabContent');
+
+  SITES.forEach((site,i) => {
+    const sid = site==='전체'?'all':site;
+    // 탭 버튼
+    const btn = document.createElement('button');
+    btn.className='tab-btn'+(i===0?' active':'');
+    btn.textContent=site; btn.dataset.site=site;
+    btn.onclick=() => {
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.site===site));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel_'+sid));
+    };
+    bar.appendChild(btn);
+
+    // 패널
+    const panel = document.createElement('div');
+    panel.id='panel_'+sid;
+    panel.className='tab-panel'+(i===0?' active':'');
+    panel.innerHTML=buildPanel(site);
+    content.appendChild(panel);
+  });
+
+  // 전체 렌더
+  SITES.forEach(s => renderData(s,'ALL'));
+
+  // 전체 버튼 클릭
+  document.getElementById('tabContent').addEventListener('click', e => {
+    const btn = e.target.closest('.period-btn');
+    if (!btn || btn.dataset.period !== 'ALL') return;
+    const site = btn.dataset.site;
+    const sid  = site==='전체'?'all':site;
+    btn.classList.add('active');
+    const sm = document.getElementById(`sel_month_${sid}`);
+    const sq = document.getElementById(`sel_quarter_${sid}`);
+    if (sm) sm.value = '';
+    if (sq) sq.value = '';
+    STATE[site] = 'ALL';
+    renderData(site, 'ALL');
+  });
+
+  // 드롭다운 change 이벤트 위임
+  document.getElementById('tabContent').addEventListener('change', e => {
+    const sel = e.target.closest('.filter-select');
+    if (!sel) return;
+    const site = sel.dataset.site;
+    const sid  = site==='전체'?'all':site;
+    const type = sel.dataset.type;
+    const val  = sel.value;
+
+    // 빈 값 → 전체 리셋
+    if (!val) {
+      STATE[site] = 'ALL';
+      document.querySelector(`[data-site="${site}"].period-btn[data-period="ALL"]`)?.classList.add('active');
+      renderData(site, 'ALL');
+      return;
+    }
+    // 다른 드롭다운 초기화
+    if (type === 'month') {
+      const sq = document.getElementById(`sel_quarter_${sid}`);
+      if (sq) sq.value = '';
+    } else {
+      const sm = document.getElementById(`sel_month_${sid}`);
+      if (sm) sm.value = '';
+    }
+    // 전체 버튼 active 해제
+    document.querySelector(`[data-site="${site}"].period-btn[data-period="ALL"]`)?.classList.remove('active');
+    STATE[site] = val;
+    renderData(site, val);
+  });
+});
+</script>
+</body>
+</html>
