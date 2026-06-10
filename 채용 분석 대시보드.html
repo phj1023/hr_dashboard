@@ -129,6 +129,7 @@ nav{display:flex;gap:4px}
     <button class="filter-btn" onclick="setMonthFilter('M2',this)">M2 (2월)</button>
     <button class="filter-btn" onclick="setMonthFilter('M3',this)">M3 (3월)</button>
     <button class="filter-btn" onclick="setMonthFilter('M4',this)">M4 (4월)</button>
+    <button class="filter-btn" onclick="setMonthFilter('M5',this)">M5 (5월)</button>
   </div>
   <div class="filter-row">
     <span class="filter-label">채널 필터</span>
@@ -136,7 +137,7 @@ nav{display:flex;gap:4px}
     <button class="filter-btn" onclick="setChannelFilter('SARAMIN',this)">사람인</button>
     <button class="filter-btn" onclick="setChannelFilter('JOBKOREA',this)">잡코리아</button>
     <button class="filter-btn" onclick="setChannelFilter('IG',this)">인스타그램</button>
-    <button class="filter-btn" onclick="setChannelFilter('OTHER',this)">기타</button>
+    <button class="filter-btn" onclick="setChannelFilter('OTHER',this)" title="헤드헌팅 / 사내추천 / 타 플랫폼 등 (사람인·잡코리아·홈페이지·IG 외 전체)">기타 (헤드헌팅 등)</button>
   </div>
   <div class="chart-grid-3">
     <div class="chart-card">
@@ -210,6 +211,7 @@ nav{display:flex;gap:4px}
     <button class="filter-btn" onclick="setBotMonthFilter('M2',this)">M2</button>
     <button class="filter-btn" onclick="setBotMonthFilter('M3',this)">M3</button>
     <button class="filter-btn" onclick="setBotMonthFilter('M4',this)">M4</button>
+    <button class="filter-btn" onclick="setBotMonthFilter('M5',this)">M5</button>
   </div>
   <div class="filter-row">
     <span class="filter-label">분기</span>
@@ -326,11 +328,29 @@ const RAW = [
   ["2026.4.1","삼초마을",    "MD",              33, 3,1,2, 2,-1,"M4","Q2",14,14, 3, 2,0,0,0,0],
   ["2026.4.1","콘크리트파머스","AX기획",          1, 0,0,0, 0, 0,"M4","Q2", 0, 0, 1, 0,0,0,0,0],
   ["2026.4.1","마케팅모먼트","퍼포먼스마케터",   1, 0,0,0, 0, 0,"M4","Q2", 0, 0, 0, 1,0,0,0,0],
+  // M5 (시작일 2026.5.1)
+  ["2026.5.1","고지식바이오","SCM",              8, 2,1,1, 1, 0,"M5","Q2", 0, 3, 1, 1,0,0,0,0],
+  ["2026.5.1","고지식바이오","BM",               1, 0,0,0, 0, 0,"M5","Q2", 0, 1, 0, 0,0,0,0,0],
+  ["2026.5.1","삼초마을",   "브랜드마케터",     11, 2,0,2, 0, 0,"M5","Q2", 0, 7, 4, 0,0,0,0,0],
+  ["2026.5.1","마케팅모먼트","콘텐츠디자이너",  17, 1,0,1, 0, 0,"M5","Q2", 0,10, 7, 0,0,0,0,0],
+  ["2026.5.1","콘크리트파머스","브랜드마케터",   5, 0,0,0, 0, 0,"M5","Q2", 0, 3, 2, 0,0,0,0,0],
+  ["2026.5.1","마케팅모먼트","재무회계",        19, 7,1,6, 0, 1,"M5","Q2", 0,13, 5, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","화장품건기식BM",    2, 0,0,0, 0, 0,"M5","Q2", 0, 1, 0, 1,0,0,0,0],
+  ["2026.5.1","마케팅모먼트","퍼포먼스마케터",  14, 8,1,7, 1, 0,"M5","Q2", 0, 5, 6, 2,0,0,0,0],
+  ["2026.5.1","마케팅모먼트","PD",              41, 1,0,1, 0, 0,"M5","Q2", 0,25,16, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","콘텐츠디자이너",   5, 2,1,1, 1, 0,"M5","Q2", 0, 3, 1, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","브랜드디자이너",   2, 0,0,0, 0, 0,"M5","Q2", 0, 2, 0, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","퍼포먼스마케터",   8, 4,3,1, 2, 1,"M5","Q2", 0, 4, 4, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","화장품건기식BM",  10, 0,0,0, 0, 0,"M5","Q2", 0, 5, 5, 0,0,0,0,0],
+  ["2026.5.1","마케팅모먼트","콘텐츠디자이너",  22, 7,2,5, 0, 2,"M5","Q2", 0,11, 9, 2,0,0,0,0],
+  ["2026.5.1","고지식바이오","퍼포먼스마케터",   3, 0,0,0, 0, 0,"M5","Q2", 0, 2, 1, 0,0,0,0,0],
+  ["2026.5.1","고지식바이오","브랜드디자이너",   8, 0,2,0, 0, 2,"M5","Q2", 0, 0, 8, 0,0,0,0,0],
+  ["2026.5.1","삼초마을",   "MD",               4, 0,0,0, 0, 0,"M5","Q2", 0, 2, 2, 0,0,0,0,0],
 ];
 
 const COMPANIES = ['마케팅모먼트','고지식바이오','삼초마을','콘크리트파머스'];
-const MONTHS = ['M1','M2','M3','M4'];
-const MONTH_LABELS = {'M1':'M1 (1월)','M2':'M2 (2월)','M3':'M3 (3월)','M4':'M4 (4월)'};
+const MONTHS = ['M1','M2','M3','M4','M5'];
+const MONTH_LABELS = {'M1':'M1 (1월)','M2':'M2 (2월)','M3':'M3 (3월)','M4':'M4 (4월)','M5':'M5 (5월)'};
 const COMPANY_COLORS = {
   '마케팅모먼트':'#ef4444',
   '고지식바이오':'#8b5cf6',
